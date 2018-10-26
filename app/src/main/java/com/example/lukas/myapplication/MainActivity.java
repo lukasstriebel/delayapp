@@ -40,23 +40,17 @@ public class MainActivity extends AppCompatActivity {
             String urlToRead = "http://transport.opendata.ch/v1/connections?from="+source.getText()+"&to="+destination.getText()+"&limit=1";
 
             try {
-
                 URL url = new URL(urlToRead);
-
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
                 conn.setRequestMethod("GET");
-
                 BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-                String line;
                 boolean t = true;
-                while ((line = rd.readLine()) != null) {
+                while (( String line = rd.readLine()) != null) {
                     //line.contains("delay:")
                     if( t) {
                         myAwesomeTextView.setText(line);
                         myAwesomeTextView.setBackgroundColor(Color.RED);
-                        //t = !t;
+                        t = !t;
                     }
                     else {
                         myAwesomeTextView.setText("No Delay");
@@ -65,9 +59,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
+            } catch(Exception e) {
+              e.printStackTrace();
+              myAwesomeTextView.setText("Received no answer from SBB Server. Will try again in 10 seconds.")
             }
-
-            catch(Exception e){e.printStackTrace();}
             return false;
         }
     };
