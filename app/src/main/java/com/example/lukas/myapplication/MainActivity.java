@@ -7,10 +7,15 @@ import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import 	android.os.Vibrator;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,40 +39,65 @@ public class MainActivity extends AppCompatActivity {
     private final View.OnTouchListener mCheckNowListener = new View.OnTouchListener() {
         @Override
         public boolean onTouch(View view, MotionEvent motionEvent) {
-            TextView myAwesomeTextView = (TextView)findViewById(R.id.fullscreen_content);
+            TextView myAwesomeTextView = (TextView) findViewById(R.id.fullscreen_content);
+
+            myAwesomeTextView.setBackgroundColor(Color.WHITE);
+            /*myAwesomeTextView.setText("Getting data.");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            myAwesomeTextView.setText("Getting data..");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/
+
+            myAwesomeTextView.setText("Getting data...");
+
             EditText source = (EditText) findViewById(R.id.source);
             EditText destination = (EditText) findViewById(R.id.destination);
-            String urlToRead = "http://transport.opendata.ch/v1/connections?from="+source.getText()+"&to="+destination.getText()+"&limit=1";
+            String src = "Buelach";//source.getText();
+            String dest = "Zuerich";//destination.getText();
+            String time = "07:35";
+            String getUrl = "http://transport.opendata.ch/v1/connections?from=" +
+                    src + "&to=" + dest + "&time=" + time +"&limit=1";
 
             try {
+                URL url = new URL(getUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
 
-                URL url = new URL(urlToRead);
-
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-                conn.setRequestMethod("GET");
-
-                BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
                 String line;
-                boolean t = true;
-                while ((line = rd.readLine()) != null) {
-                    //line.contains("delay:")
-                    if( t) {
-                        myAwesomeTextView.setText(line);
-                        myAwesomeTextView.setBackgroundColor(Color.RED);
-                        //t = !t;
-                    }
-                    else {
-                        myAwesomeTextView.setText("No Delay");
-                        myAwesomeTextView.setBackgroundColor(Color.GREEN);
-                        t = !t;
-                    }
+                StringBuilder stringBuilder = new StringBuilder();
+                
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);                        
+                }
+                System.out.println(stringBuilder.toString());
+                final JSONObject response = new JSONObject(stringBuilder.toString());
+                final JSONArray connections = response.getJSONArray("connections");
+                JSONObject from = connections.getJSONObject(0).getJSONObject("from");
+                String delayString = from.getString("delay");
+                int delay = delayString == "null" ? 0 : Integer.parseInt(delayString);
+                if (delay == 0) {
+                    myAwesomeTextView.setText("No Delay known");
+                    myAwesomeTextView.setBackgroundColor(Color.GREEN);
+                    Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    vibrator.vibrate(300);
+                } else {
+                    myAwesomeTextView.setText("Expected delay: " + delay + " minutes");
+                    myAwesomeTextView.setBackgroundColor(Color.RED);
                 }
 
+            } catch (Exception e) {
+                e.printStackTrace();
+                myAwesomeTextView.setText("Connection Error. Try again later");
             }
-
-            catch(Exception e){e.printStackTrace();}
             return false;
         }
     };
